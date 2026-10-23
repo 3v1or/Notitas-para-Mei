@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6e3e7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d0b14" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Para Mei">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="icon" type="image/png" href="icono.png">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }</style>
+<title>Notitas para Mei</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@600;700;800&family=Yeseva+One&display=swap">
+<style>
+  /* Layout: una sola pantalla. Arriba la dedicatoria, al centro el frasco de notitas,
+     abajo cómo se siente y el botón. La notita se abre encima, como un papel. */
+  :root {
+    --bg: #f6e3e7;
+    --bg-glow: #fff5f2;
+    --ink: #3b1322;
+    --ink-soft: #85505f;
+    --accent: #d2386b;
+    --accent-ink: #ffffff;
+    --chip: rgba(255, 255, 255, .55);
+    --chip-edge: rgba(133, 80, 95, .28);
+    --glass: rgba(255, 255, 255, .4);
+    --glass-edge: rgba(133, 80, 95, .4);
+    --shine: rgba(255, 255, 255, .8);
+    --gingham: rgba(210, 56, 107, .42);
+    --shadow: rgba(59, 19, 34, .22);
+    --scrim: rgba(43, 12, 25, .72);
+    --on-scrim: #fff7f9;
+    --on-scrim-edge: rgba(255, 247, 249, .45);
+    /* El papel es papel: se ve igual de día y de noche */
+    --paper: #fffaf5;
+    --paper-rule: #f0d4da;
+    --paper-margin: #f2a7b9;
+    --note-ink: #3b1322;
+    --note-soft: #95606f;
+    --note-accent: #c02c5d;
+    --tape: rgba(255, 205, 216, .82);
+    --slip-1: #ffd1db;
+    --slip-2: #ffe4bd;
+    --slip-3: #e4d9ff;
+    --slip-4: #fff6f8;
+
+    --font-display: "Yeseva One", Georgia, "Times New Roman", serif;
+    --font-hand: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+    --font-ui: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d0b14;
+      --bg-glow: #3b1527;
+      --ink: #fbe7ed;
+      --ink-soft: #d2a2b1;
+      --accent: #ff6f99;
+      --accent-ink: #2a0a16;
+      --chip: rgba(255, 255, 255, .06);
+      --chip-edge: rgba(251, 231, 237, .24);
+      --glass: rgba(255, 255, 255, .07);
+      --glass-edge: rgba(251, 231, 237, .36);
+      --shine: rgba(255, 255, 255, .3);
+      --gingham: rgba(255, 111, 153, .5);
+      --shadow: rgba(0, 0, 0, .5);
+      --scrim: rgba(10, 3, 7, .74);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d0b14;
+    --bg-glow: #3b1527;
+    --ink: #fbe7ed;
+    --ink-soft: #d2a2b1;
+    --accent: #ff6f99;
+    --accent-ink: #2a0a16;
+    --chip: rgba(255, 255, 255, .06);
+    --chip-edge: rgba(251, 231, 237, .24);
+    --glass: rgba(255, 255, 255, .07);
+    --glass-edge: rgba(251, 231, 237, .36);
+    --shine: rgba(255, 255, 255, .3);
+    --gingham: rgba(255, 111, 153, .5);
+    --shadow: rgba(0, 0, 0, .5);
+    --scrim: rgba(10, 3, 7, .74);
+    color-scheme: dark;
+  }
+
+  html { height: 100%; box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(110% 60% at 50% 42%, var(--bg-glow) 0%, transparent 72%), var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body.lock { overflow: hidden; }
+
+  button { font-family: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  /* --- PANTALLA PRINCIPAL --- */
+  .app {
+    flex: 1;
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 2.8vh, 26px);
+    padding-block: 24px 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    text-align: center;
+  }
+
+  .hello { display: grid; gap: 4px; justify-items: center; }
+  .from {
+    margin: 0;
+    font-weight: 800;
+    font-size: .72rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.5rem, 12vw, 3.3rem);
+    line-height: 1;
+    text-wrap: balance;
+  }
+  h1 span { color: var(--accent); }
+  .dedication {
+    margin: 4px 0 0;
+    font-family: var(--font-hand);
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--ink-soft);
+    transform: rotate(-2deg);
+    text-wrap: balance;
+  }
+
+  /* --- EL FRASCO --- */
+  .jar {
+    position: relative;
+    display: block;
+    flex: none;
+    width: min(50vw, 200px, 27vh);
+    max-width: 100%;
+    aspect-ratio: 4 / 5;
+    padding: 0;
+    border: 0;
+    background: none;
+    transform-origin: 50% 92%;
+    transition: transform .25s ease;
+  }
+  .jar:focus-visible { outline-offset: 10px; border-radius: 28px; }
+  @media (hover: hover) { .jar:hover { transform: rotate(-2deg); } }
+  .jar.wiggle { animation: wiggle .55s ease; }
+  @keyframes wiggle {
+    20% { transform: rotate(-5deg); }
+    45% { transform: rotate(4deg); }
+    70% { transform: rotate(-2deg); }
+    100% { transform: rotate(0); }
+  }
+
+  .jar-body {
+    position: absolute;
+    left: 0; right: 0; top: 12%; bottom: 0;
+    border-radius: 30% 30% 24% 24% / 16% 16% 13% 13%;
+    background: var(--glass);
+    border: 2px solid var(--glass-edge);
+    overflow: hidden;
+    box-shadow: 0 20px 30px -18px var(--shadow), inset 0 -12px 24px -14px var(--shadow);
+  }
+  .jar-body::after {
+    content: "";
+    position: absolute;
+    top: 10%; left: 10%;
+    width: 9%; height: 56%;
+    border-radius: 999px;
+    background: linear-gradient(var(--shine), transparent);
+  }
+  .jar-lid {
+    position: absolute;
+    top: 0; left: 14%; right: 14%;
+    height: 16%;
+    z-index: 2;
+    border-radius: 10px 10px 16px 16px / 10px 10px 12px 12px;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(90deg, var(--gingham) 50%, transparent 50%),
+      linear-gradient(var(--gingham) 50%, transparent 50%);
+    background-size: 12px 12px;
+    box-shadow: 0 3px 6px -2px var(--shadow);
+  }
+  .jar-string {
+    position: absolute;
+    top: 14%; left: 13%; right: 13%;
+    height: 4px;
+    z-index: 3;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+  .jar-tag {
+    position: absolute;
+    top: 16%; right: 2%;
+    z-index: 3;
+    padding: 1px 9px 2px;
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--note-ink);
+    font-family: var(--font-hand);
+    font-size: .85rem;
+    box-shadow: 0 2px 4px var(--shadow);
+    transform: rotate(9deg);
+  }
+
+  .slips { position: absolute; inset: 22% 6% 5%; }
+  .slip {
+    position: absolute;
+    width: 32%;
+    height: 11%;
+    border-radius: 6px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .6), transparent 45%, rgba(59, 19, 34, .08)),
+      var(--c, var(--slip-1));
+    box-shadow: 0 1px 2px rgba(59, 19, 34, .2);
+    transform: rotate(var(--r, 0deg));
+    transition: opacity .35s ease, transform .35s ease;
+  }
+  .slip::after {
+    content: "";
+    position: absolute;
+    left: 46%; top: -8%; bottom: -8%;
+    width: 7%;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: .75;
+  }
+  .slip.gone { opacity: 0; transform: translateY(-40%) rotate(var(--r, 0deg)) scale(.7); }
+  .flyer {
+    position: fixed;
+    width: 66px;
+    height: 22px;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  /* --- CÓMO TE SIENTES --- */
+  .moods { display: grid; gap: 10px; justify-items: center; width: 100%; }
+  .moods-label {
+    margin: 0;
+    font-family: var(--font-hand);
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+  }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--chip-edge);
+    background: var(--chip);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: .9rem;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  .cta {
+    min-width: min(100%, 280px);
+    padding: 16px 30px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 800;
+    font-size: 1.1rem;
+    box-shadow: 0 12px 24px -12px var(--accent);
+    transition: transform .15s ease;
+  }
+  .cta:active { transform: scale(.97); }
+  .cta:focus-visible { outline-color: var(--ink); }
+
+  .foot { display: grid; gap: 4px; justify-items: center; }
+  .count { margin: 0; font-size: .92rem; color: var(--ink-soft); }
+  .count strong { color: var(--ink); }
+  .link {
+    padding: 6px 8px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: .95rem;
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .tip { margin: 6px auto 0; max-width: 32ch; font-size: .8rem; line-height: 1.4; color: var(--ink-soft); }
+
+  /* --- LA NOTITA --- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--scrim);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    animation: fade .3s ease;
+  }
+  .dialog { width: min(100%, 400px); display: grid; gap: 22px; justify-items: center; }
+  .dialog:focus { outline: none; }
+
+  .note {
+    position: relative;
+    width: 100%;
+    padding: 34px 22px 22px 52px;
+    border-radius: 3px;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(90deg, transparent 36px, var(--paper-margin) 36px, var(--paper-margin) 37.5px, transparent 37.5px),
+      repeating-linear-gradient(180deg, transparent 0 33px, var(--paper-rule) 33px 34px);
+    color: var(--note-ink);
+    text-align: left;
+    box-shadow: 0 30px 50px -24px rgba(20, 4, 10, .65), 0 2px 6px rgba(20, 4, 10, .15);
+    transform: rotate(-1.2deg);
+  }
+  .tape {
+    position: absolute;
+    top: -13px; left: 50%;
+    width: 100px; height: 28px;
+    display: grid;
+    place-items: center;
+    background: var(--tape);
+    color: var(--note-ink);
+    font-family: var(--font-hand);
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(20, 4, 10, .1);
+    transform: translateX(-50%) rotate(-3deg);
+  }
+  .note p { margin: 0; line-height: 34px; }
+  .note-meta {
+    font-weight: 800;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--note-soft);
+  }
+  .note-text {
+    font-family: var(--font-hand);
+    font-size: 1.45rem;
+    text-wrap: pretty;
+  }
+  .note-text .w { animation: ink .45s ease backwards; animation-delay: calc(.35s + var(--i) * 45ms); }
+  .note-sign {
+    font-family: var(--font-hand);
+    font-weight: 700;
+    font-size: 1.35rem;
+    text-align: right;
+    color: var(--note-accent);
+  }
+
+  .note-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .act {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--on-scrim-edge);
+    background: transparent;
+    color: var(--on-scrim);
+    font-weight: 700;
+    font-size: .95rem;
+  }
+  .act svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .act[aria-pressed="true"] svg { fill: currentColor; }
+  .act-main { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .act:focus-visible { outline-color: var(--on-scrim); }
+
+  .dialog.enter .note { animation: unfold .75s cubic-bezier(.2, .9, .3, 1.12) backwards; }
+  .dialog.enter .note-actions { animation: rise .4s ease .6s backwards; }
+
+  .burst {
+    position: fixed;
+    z-index: 30;
+    width: 22px;
+    height: 22px;
+    color: var(--accent);
+    pointer-events: none;
+  }
+  .burst svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+
+  /* --- GUARDADAS --- */
+  .sheet-layer { place-items: end center; padding-bottom: 0; }
+  .sheet {
+    width: min(100%, 520px);
+    max-height: min(80vh, 680px);
+    overflow-y: auto;
+    display: grid;
+    gap: 14px;
+    align-content: start;
+    padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 22px 22px 0 0;
+    background: var(--bg);
+    color: var(--ink);
+    animation: rise .35s ease backwards;
+  }
+  .sheet:focus { outline: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .sheet h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.7rem; }
+  .empty { margin: 0; font-family: var(--font-hand); font-size: 1.15rem; line-height: 1.45; color: var(--ink-soft); }
+  .saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .saved {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px 8px;
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--note-ink);
+    box-shadow: 0 8px 16px -10px var(--shadow);
+    transform: rotate(-.5deg);
+  }
+  .saved:nth-child(even) { transform: rotate(.5deg); }
+  .saved-meta {
+    margin: 0;
+    font-weight: 800;
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--note-soft);
+  }
+  .saved-text { margin: 0; font-family: var(--font-hand); font-size: 1.2rem; line-height: 1.45; }
+  .saved-remove {
+    justify-self: end;
+    padding: 6px 4px;
+    border: 0;
+    background: none;
+    color: var(--note-accent);
+    font-weight: 700;
+    font-size: .85rem;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    max-width: calc(100% - 32px);
+    margin: 0;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: .9rem;
+    text-align: center;
+    opacity: 0;
+    transform: translate(-50%, 16px);
+    transition: opacity .3s ease, transform .3s ease;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  @keyframes ink { from { opacity: 0; } }
+  @keyframes unfold {
+    from { opacity: 0; transform: translateY(70px) scale(.22) rotate(-14deg); }
+    40% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+
+<svg class="defs" aria-hidden="true" focusable="false">
+  <symbol id="i-heart" viewBox="0 0 24 24">
+    <path d="M12 21s-7.6-4.5-9.6-9.2C.9 7.7 3 4 6.6 4c2.2 0 3.8 1.2 5.4 3.2C13.6 5.2 15.2 4 17.4 4 21 4 23.1 7.7 21.6 11.3 19.6 16 12 21 12 21z"/>
+  </symbol>
+</svg>
+
+<main class="app">
+  <header class="hello">
+    <p class="from">Notitas de <span id="de">Emi</span></p>
+    <h1>Para <span id="para">Mei</span></h1>
+    <p class="dedication">para cuando necesites sentirte amada</p>
+  </header>
+
+  <button class="jar" id="jar" type="button" aria-label="Sacar una notita del frasco">
+    <span class="jar-body" aria-hidden="true"><span class="slips" id="slips"></span></span>
+    <span class="jar-lid" aria-hidden="true"></span>
+    <span class="jar-string" aria-hidden="true"></span>
+    <span class="jar-tag" aria-hidden="true">te amo</span>
+  </button>
+
+  <section class="moods" aria-labelledby="moods-label">
+    <p class="moods-label" id="moods-label">Si quieres, dime cómo te sientes</p>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <button class="cta" id="cta" type="button">Sacar una notita</button>
+
+  <footer class="foot">
+    <p class="count" id="count" aria-live="polite">Quedan <strong>49</strong> notitas nuevas en el frasco</p>
+    <button class="link" id="open-saved" type="button">Mis guardadas (<span id="saved-count">0</span>)</button>
+    <p class="tip" id="tip">Guárdame en la pantalla de inicio de tu celular y me tienes siempre a la mano.</p>
+  </footer>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" id="dialog" role="dialog" aria-modal="true" aria-labelledby="note-text" tabindex="-1">
+    <article class="note" id="note">
+      <span class="tape" id="note-num">nº 1</span>
+      <p class="note-meta" id="note-cat">Porque sí</p>
+      <p class="note-text" id="note-text"></p>
+      <p class="note-sign" id="firma">— Emi</p>
+    </article>
+    <div class="note-actions">
+      <button class="act" id="btn-save" type="button" aria-pressed="false"><svg aria-hidden="true"><use href="#i-heart"></use></svg><span>Guardar</span></button>
+      <button class="act act-main" id="btn-again" type="button">Otra notita</button>
+      <button class="act" id="btn-close" type="button">Volver al frasco</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay sheet-layer" id="sheet" hidden>
+  <section class="sheet" id="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+    <div class="sheet-head">
+      <h2 id="sheet-title">Tus guardadas</h2>
+      <button class="link" id="sheet-close" type="button">Cerrar</button>
+    </div>
+    <p class="empty" id="saved-empty">Todavía no guardas ninguna. Cuando una notita te guste mucho, toca Guardar y se queda aquí.</p>
+    <ul class="saved-list" id="saved-list"></ul>
+  </section>
+</div>
+
+<p class="toast" id="toast" role="status" aria-live="polite"></p>
+
+<script src="notitas.js"></script>
+<script>
+  // Si notitas.js quedó mal escrito (falta una comilla o una coma), lo avisa en vez de quedarse en blanco.
+  function fallo() {
+    document.querySelector(".app").innerHTML =
+      '<p class="dedication">Algo quedó mal escrito en notitas.js. Revisa que cada notita tenga sus comillas y termine en coma.</p>';
+    throw new Error("notitas.js tiene un error");
+  }
+  if (typeof NOTITAS === "undefined" || typeof DE === "undefined" || typeof PARA === "undefined") fallo();
+
+  // --- MEMORIA (se guarda en su celular) ---
+  const CLAVE = "notitas-para-mei:";
+  function leer(k, porDefecto) {
+    try { const v = localStorage.getItem(CLAVE + k); return v ? JSON.parse(v) : porDefecto; }
+    catch (e) { return porDefecto; }
+  }
+  function escribir(k, v) {
+    try { localStorage.setItem(CLAVE + k, JSON.stringify(v)); } catch (e) {}
+  }
+
+  const TODAS = [];
+  for (const [cat, grupo] of Object.entries(NOTITAS)) {
+    for (const texto of grupo.notas) TODAS.push({ texto, cat, num: TODAS.length + 1 });
+  }
+  if (!TODAS.length) fallo();
+  const existentes = new Set(TODAS.map(n => n.texto));
+  let vistas = new Set(leer("vistas", []).filter(t => existentes.has(t)));
+  let guardadas = leer("guardadas", []);
+  let ultima = leer("ultima", null);
+  let animo = null;
+  let actual = null;
+  let ocupado = false;
+  const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = id => document.getElementById(id);
+
+  // --- NOMBRES ---
+  document.title = "Notitas para " + PARA;
+  $("de").textContent = DE;
+  $("para").textContent = PARA;
+  $("firma").textContent = "— " + DE;
+
+  // --- BOTONES DE CÓMO TE SIENTES ---
+  const chips = $("chips");
+  for (const [cat, grupo] of Object.entries(NOTITAS)) {
+    if (!grupo.boton || !grupo.notas.length) continue;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.id = "animo-" + cat;
+    b.textContent = grupo.boton;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => {
+      animo = animo === cat ? null : cat;
+      chips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c.id === "animo-" + animo)));
+    });
+    chips.appendChild(b);
+  }
+
+  // --- PAPELITOS DEL FRASCO ---
+  const PAPELITOS = 22;
+  const colores = ["--slip-1", "--slip-2", "--slip-3", "--slip-4"];
+  let semilla = 11;
+  const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
+  const slipsEl = $("slips");
+  for (let i = 0; i < PAPELITOS; i++) {
+    const s = document.createElement("span");
+    s.className = "slip";
+    const fila = Math.floor(i / 4), col = i % 4;
+    s.style.left = Math.min(68, Math.max(0, col * 22.5 + (azar() - .5) * 8)) + "%";
+    s.style.bottom = Math.max(0, fila * 12 + (azar() - .5) * 5) + "%";
+    s.style.setProperty("--r", Math.round((azar() - .5) * 70) + "deg");
+    s.style.setProperty("--c", `var(${colores[Math.floor(azar() * colores.length)]})`);
+    slipsEl.appendChild(s);
+  }
+
+  function pintarFrasco() {
+    const quedan = TODAS.filter(n => !vistas.has(n.texto)).length;
+    const visibles = Math.ceil(quedan / TODAS.length * PAPELITOS);
+    slipsEl.querySelectorAll(".slip").forEach((s, i) => s.classList.toggle("gone", i >= visibles));
+    $("count").innerHTML = quedan
+      ? `Quedan <strong>${quedan}</strong> ${quedan === 1 ? "notita nueva" : "notitas nuevas"} en el frasco`
+      : "Ya las leíste todas. La próxima vuelve a llenar el frasco.";
+    $("saved-count").textContent = guardadas.length;
+  }
+
+  let avisoTimer;
+  function aviso(texto) {
+    const t = $("toast");
+    t.textContent = texto;
+    t.classList.add("show");
+    clearTimeout(avisoTimer);
+    avisoTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  // Nunca repite una notita hasta que ya salieron todas las de ese grupo.
+  function elegir(cat) {
+    let grupo = cat ? TODAS.filter(n => n.cat === cat) : TODAS;
+    if (!grupo.length) grupo = TODAS;
+    let nuevas = grupo.filter(n => !vistas.has(n.texto));
+    let rellenado = false;
+    if (!nuevas.length) {
+      grupo.forEach(n => vistas.delete(n.texto));
+      nuevas = grupo.filter(n => n.texto !== ultima);
+      if (!nuevas.length) nuevas = grupo;
+      rellenado = true;
+    }
+    const nota = nuevas[Math.floor(Math.random() * nuevas.length)];
+    vistas.add(nota.texto);
+    ultima = nota.texto;
+    escribir("vistas", [...vistas]);
+    escribir("ultima", ultima);
+    return { nota, rellenado };
+  }
+
+  // --- ANIMACIONES ---
+  function menear() {
+    const jar = $("jar");
+    jar.classList.remove("wiggle");
+    void jar.offsetWidth;
+    jar.classList.add("wiggle");
+  }
+
+  function volar() {
+    return new Promise(listo => {
+      if (sinMovimiento || !document.body.animate) return listo();
+      const tapa = document.querySelector(".jar-lid").getBoundingClientRect();
+      const f = document.createElement("span");
+      f.className = "slip flyer";
+      f.style.setProperty("--c", `var(${colores[Math.floor(Math.random() * colores.length)]})`);
+      f.style.left = tapa.left + tapa.width / 2 - 33 + "px";
+      f.style.top = tapa.top + tapa.height * .4 + "px";
+      document.body.appendChild(f);
+      const vuelo = f.animate([
+        { transform: "translateY(10px) rotate(-12deg) scale(.7)", opacity: 0 },
+        { transform: "translateY(-70px) rotate(10deg) scale(1.2)", opacity: 1, offset: .45 },
+        { transform: "translateY(-150px) rotate(-4deg) scale(2.2)", opacity: 0 },
+      ], { duration: 700, easing: "cubic-bezier(.3, .6, .35, 1)" });
+      // Por si la animación no termina (por ejemplo, si cambia de app justo en ese momento).
+      let hecho = false;
+      const terminar = () => { if (hecho) return; hecho = true; f.remove(); listo(); };
+      vuelo.onfinish = terminar;
+      setTimeout(terminar, 900);
+    });
+  }
+
+  function lluvia(desde) {
+    if (sinMovimiento || !desde.animate) return;
+    const r = desde.getBoundingClientRect();
+    for (let i = 0; i < 12; i++) {
+      const c = document.createElement("span");
+      c.className = "burst";
+      c.innerHTML = '<svg aria-hidden="true"><use href="#i-heart"></use></svg>';
+      c.style.left = r.left + r.width * (.2 + Math.random() * .6) + "px";
+      c.style.top = r.top + 6 + "px";
+      if (i % 3 === 0) c.style.color = "var(--slip-1)";
+      document.body.appendChild(c);
+      const dx = (Math.random() - .5) * 140;
+      const dy = -(70 + Math.random() * 130);
+      const escala = (.6 + Math.random() * .7).toFixed(2);
+      const giro = Math.round((Math.random() - .5) * 50);
+      c.animate([
+        { transform: "translate(-50%, -50%) scale(.3)", opacity: 0 },
+        { opacity: 1, offset: .25 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${escala}) rotate(${giro}deg)`, opacity: 0 },
+      ], { duration: 1200 + Math.random() * 600, delay: Math.random() * 150, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "backwards" })
+        .onfinish = () => c.remove();
+    }
+  }
+
+  // --- ABRIR Y CERRAR LA NOTITA ---
+  async function sacar(desdeLaNotita) {
+    if (ocupado) return;
+    ocupado = true;
+    const { nota, rellenado } = elegir(animo);
+    pintarFrasco();
+    if (!desdeLaNotita) { menear(); await volar(); }
+    abrir(nota, rellenado);
+    ocupado = false;
+  }
+
+  function abrir(nota, rellenado) {
+    actual = nota;
+    $("note-num").textContent = "nº " + nota.num;
+    $("note-cat").textContent = NOTITAS[nota.cat].etiqueta;
+    const p = $("note-text");
+    p.textContent = "";
+    nota.texto.split(/\s+/).forEach((palabra, i) => {
+      if (i) p.append(" ");
+      const w = document.createElement("span");
+      w.className = "w";
+      w.style.setProperty("--i", i);
+      w.textContent = palabra;
+      p.append(w);
+    });
+    pintarGuardar();
+
+    const capa = $("overlay");
+    const yaAbierta = !capa.hidden;
+    capa.hidden = false;
+    document.body.classList.add("lock");
+    const d = $("dialog");
+    d.classList.remove("enter");
+    void d.offsetWidth;
+    d.classList.add("enter");
+    if (!yaAbierta) d.focus({ preventScroll: true });
+    setTimeout(() => lluvia($("note")), 380);
+
+    if (rellenado) {
+      aviso(animo
+        ? "Ya leíste todas las de este tipo, así que vuelven a empezar."
+        : "Ya las leíste todas, así que el frasco se volvió a llenar.");
+    }
+  }
+
+  function cerrar() {
+    $("overlay").hidden = true;
+    document.body.classList.remove("lock");
+    $("cta").focus({ preventScroll: true });
+  }
+
+  // --- GUARDADAS ---
+  function pintarGuardar() {
+    const si = !!actual && guardadas.includes(actual.texto);
+    const b = $("btn-save");
+    b.setAttribute("aria-pressed", String(si));
+    b.querySelector("span").textContent = si ? "Guardada" : "Guardar";
+  }
+
+  function pintarGuardadas() {
+    const ul = $("saved-list");
+    ul.textContent = "";
+    $("saved-empty").hidden = guardadas.length > 0;
+    for (const texto of guardadas) {
+      const nota = TODAS.find(n => n.texto === texto);
+      const li = document.createElement("li");
+      li.className = "saved";
+      const meta = document.createElement("p");
+      meta.className = "saved-meta";
+      meta.textContent = nota ? `Notita ${nota.num} · ${NOTITAS[nota.cat].etiqueta}` : "Notita";
+      const p = document.createElement("p");
+      p.className = "saved-text";
+      p.textContent = texto;
+      const quitar = document.createElement("button");
+      quitar.type = "button";
+      quitar.className = "saved-remove";
+      quitar.textContent = "Quitar";
+      quitar.addEventListener("click", () => {
+        guardadas = guardadas.filter(t => t !== texto);
+        escribir("guardadas", guardadas);
+        pintarGuardadas();
+        pintarFrasco();
+      });
+      li.append(meta, p, quitar);
+      ul.append(li);
+    }
+  }
+
+  function abrirGuardadas() {
+    pintarGuardadas();
+    $("sheet").hidden = false;
+    document.body.classList.add("lock");
+    $("sheet-panel").focus({ preventScroll: true });
+  }
+
+  function cerrarGuardadas() {
+    $("sheet").hidden = true;
+    document.body.classList.remove("lock");
+    $("open-saved").focus({ preventScroll: true });
+  }
+
+  // --- EVENTOS ---
+  $("jar").addEventListener("click", () => sacar(false));
+  $("cta").addEventListener("click", () => sacar(false));
+  $("btn-again").addEventListener("click", () => sacar(true));
+  $("btn-close").addEventListener("click", cerrar);
+  $("overlay").addEventListener("click", e => { if (e.target === e.currentTarget) cerrar(); });
+  $("btn-save").addEventListener("click", () => {
+    if (!actual) return;
+    if (guardadas.includes(actual.texto)) {
+      guardadas = guardadas.filter(t => t !== actual.texto);
+      aviso("La quitaste de tus guardadas.");
+    } else {
+      guardadas.unshift(actual.texto);
+      aviso("Guardada. La encuentras en “Mis guardadas”.");
+    }
+    escribir("guardadas", guardadas);
+    pintarGuardar();
+    pintarFrasco();
+  });
+  $("open-saved").addEventListener("click", abrirGuardadas);
+  $("sheet-close").addEventListener("click", cerrarGuardadas);
+  $("sheet").addEventListener("click", e => { if (e.target === e.currentTarget) cerrarGuardadas(); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (!$("sheet").hidden) cerrarGuardadas();
+    else if (!$("overlay").hidden) cerrar();
+  });
+
+  // Si ya la tiene en la pantalla de inicio, no hace falta el consejo.
+  if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) $("tip").hidden = true;
+
+  pintarFrasco();
+</script>
+
+</html>
